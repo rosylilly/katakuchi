@@ -1,5 +1,3 @@
-require "katakuchi/version"
-
-module Katakuchi
-  # Your code goes here...
-end
+require 'katakuchi/version'
+require 'katakuchi/role'
+require 'katakuchi/railtie' if defined?(Rails)
