@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Katakuchi::VERSION
   spec.authors       = ["Sho Kusano"]
   spec.email         = ["rosylilly@aduca.org"]
-  spec.description   = %q{TODO: Write a gem description}
-  spec.summary       = %q{TODO: Write a gem summary}
+  spec.description   = %q{}
+  spec.summary       = %q{}
   spec.homepage      = ""
   spec.license       = "MIT"
 
