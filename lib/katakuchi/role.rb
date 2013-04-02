@@ -9,60 +9,55 @@ module Katakuchi::Role
     end
 
     def inject(instance_or_relation)
-      return instance_or_relation unless injectable?(instance_or_relation)
+      return nil if instance_or_relation.nil?
 
-      if instance_or_relation.kind_of?(@base_model)
-        return inject_to_instance(instance_or_relation)
-      end
-
-      if instance_or_relation === Array
-        return inject_to_array(inject_to_relation)
-      end
-
-      inject_to_relation(instance_or_relation)
-    end
-
-    def inject_to_instance(instance)
-      instance.extend(self)
-    end
-
-    def inject_to_array(array)
-      array.map do |obj|
-        inject(obj)
+      case instance_or_relation
+      when Array then inject_with_array(instance_or_relation)
+      when ActiveRecord::Relation then inject_with_relation(instance_or_relation)
+      else inject_with_instance(instance_or_relation)
       end
     end
 
-    def instance_or_relation(relation)
-      if injectable?(relation)
-        relation.singleton_class.class_eval(<<-EOF)
-          def to_a_with_#{alias_method_name}
-            to_a_without_#{alias_method_name}.tap do |array|
-              #{self.name}.inject(array)
+    def inject_with_array(array)
+      array.each do |obj|
+        inject_with_instance(obj)
+      end
+
+      return array
+    end
+
+    def inject_with_relation(relation)
+      unless relation.respond_to?(:"to_a_with_#{inject_method_name}")
+        (class << relation; end).class_eval(<<-EOF)
+          def to_a_with_#{inject_method_name}(*args)
+            to_a_without_#{inject_method_name}(*args).tap do |relation|
+              #{self.name}.inject(relation)
             end
           end
 
-          alias_method_chain :to_a, :#{alias_method_name}
+          alias_method_chain :to_a, :#{inject_method_name}
         EOF
       end
 
       return relation
     end
 
-    def injectable?(relation)
-      (
-        relation.kind_of?(@base_model) ||
-        (
-          defined?(ActiveRecord) &&
-          relation.is_a?(ActiveRecord::Relation) &&
-          !relation.respond_to?(alias_method_name)
-        )
-      )
+    def inject_with_instance(obj)
+      unless obj.is_a?(self)
+        obj.extend(self)
+      end
+
+      return obj
     end
 
     private
 
-    def alias_method_name
-      @alias_method_name ||= :"role_inject_#{self.name}"
+    def role_name
+      @role_name ||= self.name.to_s.underscore
+    end
+
+    def inject_method_name
+      @inject_method_name ||= "#{role_name}_inject"
     end
 
     def method_missing(name, *args, &block)
