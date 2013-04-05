@@ -14,6 +14,7 @@ module Katakuchi::Role
       case instance_or_relation
       when Array then inject_with_array(instance_or_relation)
       when ActiveRecord::Relation then inject_with_relation(instance_or_relation)
+      when Katakuchi::Relation then inject_with_instance
       else inject_with_instance(instance_or_relation)
       end
     end
@@ -27,17 +28,7 @@ module Katakuchi::Role
     end
 
     def inject_with_relation(relation)
-      unless relation.respond_to?(:"to_a_with_#{inject_method_name}")
-        (class << relation; end).class_eval(<<-EOF)
-          def to_a_with_#{inject_method_name}(*args)
-            to_a_without_#{inject_method_name}(*args).tap do |relation|
-              #{self.name}.inject(relation)
-            end
-          end
-
-          alias_method_chain :to_a, :#{inject_method_name}
-        EOF
-      end
+      relation = Katakuchi::Relation.new(relation, self)
 
       return relation
     end
