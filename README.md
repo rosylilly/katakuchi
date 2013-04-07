@@ -1,6 +1,6 @@
 # Katakuchi
 
-TODO: Write a gem description
+片口: 鉢で，取っ手がなく一方に注ぎ口の突き出ているもの。
 
 ## Installation
 
@@ -18,7 +18,34 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+`app/models/user.rb`
+
+```ruby
+class User < ActiveRecord::Base
+  # columns: name, email
+end
+```
+
+`app/roles/writer.rb`
+
+```ruby
+class Writer
+  include Katakuchi::Role
+
+  def write
+    "Hello, #{self.name}"
+  end
+end
+```
+
+in any controller.
+
+```
+def index
+  @writers = Writer.all # => User.all.map{|user| user.extend(Writer) }
+  @writers.each(&:write)
+end
+```
 
 ## Contributing
 
