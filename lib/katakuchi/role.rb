@@ -8,13 +8,17 @@ module Katakuchi::Role
       @base_model = model
     end
 
+    def extend_class(&block)
+      extend_class_blocks.push(block)
+    end
+
     def inject(instance_or_relation)
       return nil if instance_or_relation.nil?
 
       case instance_or_relation
       when Array then inject_with_array(instance_or_relation)
       when ActiveRecord::Relation then inject_with_relation(instance_or_relation)
-      when Katakuchi::Relation then inject_with_instance
+      when Katakuchi::Relation then instance_or_relation
       else inject_with_instance(instance_or_relation)
       end
     end
@@ -34,8 +38,12 @@ module Katakuchi::Role
     end
 
     def inject_with_instance(obj)
-      unless obj.is_a?(self)
+      if !obj.is_a?(self) && obj.kind_of?(@base_model)
         obj.extend(self)
+
+        extend_class_blocks.each |extend_class_block|
+          obj.singleton_class.class_eval(extend_class_block)
+        end
       end
 
       return obj
@@ -45,6 +53,10 @@ module Katakuchi::Role
 
     def role_name
       @role_name ||= self.name.to_s.underscore
+    end
+
+    def extend_class_blocks
+      @extend_class_blocks ||= []
     end
 
     def inject_method_name
